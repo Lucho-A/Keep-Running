@@ -42,7 +42,7 @@ public class GPSLocationService extends Service{
     private static final double VEL_LIMIT_MIN = 1.0;
     private static final double R_TIERRA = 6371.0;
     private static final long LOCATION_INTERVAL = 1000;
-    private static final float LOCATION_DISTANCE = (float) 1.0;
+    private static final float LOCATION_DISTANCE = (float) 0.1;
     private static final int LIMIT_DIST_MAP = 50;
     private static final int LIMIT_DIST_PAR = 1000;
     private final SimpleDateFormat timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
@@ -103,12 +103,12 @@ public class GPSLocationService extends Service{
         distanciaParcialMap =0;
         log_name =timeStamp.format(Calendar.getInstance().getTime());
         appendLog("Running comenzado: " + Calendar.getInstance().getTime(),0);
-        appendLog("Fecha/Hora;Distancia(m);Distancia Parcial(m);Distancia Total(km);Latitud;Longitud;PrecisiÃ³n;Velocidad",0);
+        appendLog("Fecha/Hora;Distancia(m);Distancia Parcial(m);Distancia Total(km);Latitud;Longitud;Velocidad;Velocidad GPS",0);
         play();
         fechaHoraComienzo= Calendar.getInstance().getTime();
         horaAnterior=Calendar.getInstance().getTime();
         coordMap="|";
-        tts.speak("Â¡Comenzando el running!", TextToSpeech.QUEUE_FLUSH, null);
+        tts.speak("¡Comenzando el running!", TextToSpeech.QUEUE_FLUSH, null);
         startListening();
         return START_NOT_STICKY;
     }
@@ -146,6 +146,7 @@ public class GPSLocationService extends Service{
             criteria.setAccuracy(Criteria.ACCURACY_FINE);
             criteria.setPowerRequirement(Criteria.POWER_HIGH);
             criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
+            criteria.setSpeedRequired(true);
             String providerName = mLocationManager.getBestProvider(criteria, true);
             if (providerName == null) {
                 appendLog(timeStamp.format(Calendar.getInstance().getTime()) + "No hay proovedores GPS con estos criterios",-1);
@@ -398,8 +399,10 @@ public class GPSLocationService extends Service{
                     distanciaTotal += distanciaEntreLoc;
                     distanciaParcial += distanciaEntreLoc;
                     distanciaParcialMap += distanciaEntreLoc;
-                    String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" + distanciaEntreLoc + ";" + distanciaParcial + ";" + distanciaTotal/1000.0 +
-                            locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getAccuracy() + ";" + vel;
+                    String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" +
+                            distanciaEntreLoc + ";" + distanciaParcial + ";" + distanciaTotal/1000.0 +
+                            locActual.getLatitude() + ";" + locActual.getLongitude() + ";" +
+                            ";" + vel + ";" + locActual.getSpeed();
                     appendLog(logging,0);
                 }
                 if (distanciaParcial > LIMIT_DIST_PAR) {

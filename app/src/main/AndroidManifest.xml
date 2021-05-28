@@ -19,7 +19,8 @@
         <service
             android:name=".GPSLocationService"
             android:enabled="true"
-            android:exported="false"></service>
+            android:exported="false"
+            android:foregroundServiceType="location"></service>
 
         <activity android:name=".MainActivity">
             <intent-filter>
