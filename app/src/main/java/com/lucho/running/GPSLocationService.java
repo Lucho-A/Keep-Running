@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import android.widget.Toast;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,8 +39,10 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double VEL_LIMIT_MAX = 7.0;
+    private static final double VEL_LIMIT_MAX = 6.0;
     private static final double VEL_LIMIT_MIN = 1.0;
+    private static final int MIN_SAT = 3;
+    private static final double DIST_MAX = 10.0;
     private static final double R_TIERRA = 6371.0;
     private static final long LOCATION_INTERVAL = 1000;
     private static final float LOCATION_DISTANCE = (float) 0.1;
@@ -71,7 +74,6 @@ public class GPSLocationService extends Service{
     private Notification.Builder builder;
     private NotificationManager notificationManager;
     private int contLocInicio;
-
 
     public IBinder onBind(Intent intent) {
         return binder;
@@ -107,7 +109,6 @@ public class GPSLocationService extends Service{
         play();
         fechaHoraComienzo= Calendar.getInstance().getTime();
         horaAnterior=Calendar.getInstance().getTime();
-        coordMap="|";
         tts.speak("¡Comenzando el running!", TextToSpeech.QUEUE_FLUSH, null);
         startListening();
         return START_NOT_STICKY;
@@ -380,8 +381,18 @@ public class GPSLocationService extends Service{
         }
 
         public void onLocationChanged(Location location) {
-            locActual=location;
+            locActual = location;
+            Boolean esMedidaValida = false;
+            double distanciaEntreLoc = distance_between();
             mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+            if (distanciaEntreLoc<DIST_MAX &&
+                    locActual.getExtras().getInt("satellites")>MIN_SAT &&
+                    locActual.hasSpeed() &&
+                    locActual.getSpeed() > VEL_LIMIT_MIN &&
+                    locActual.getSpeed() < VEL_LIMIT_MAX) {
+                esMedidaValida = true;
+            }
+            double vel=locActual.getSpeed();
             if(locInicio.getLatitude()==0) {
                 if(contLocInicio==3) {
                     locInicio = location;
@@ -392,17 +403,15 @@ public class GPSLocationService extends Service{
                     contLocInicio++;
                 }
             }else {
-                double distanciaEntreLoc = distance_between();
-                double segundos = calcularSegundos(locActual);
-                double vel = distanciaEntreLoc / segundos;
-                if(vel>=VEL_LIMIT_MIN && vel<=VEL_LIMIT_MAX) {
+                //double segundos = calcularSegundos(locActual);
+                //double vel = distanciaEntreLoc / segundos;
+                if(esMedidaValida) {
                     distanciaTotal += distanciaEntreLoc;
                     distanciaParcial += distanciaEntreLoc;
                     distanciaParcialMap += distanciaEntreLoc;
                     String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" +
                             distanciaEntreLoc + ";" + distanciaParcial + ";" + distanciaTotal/1000.0 +
-                            locActual.getLatitude() + ";" + locActual.getLongitude() + ";" +
-                            ";" + vel + ";" + locActual.getSpeed();
+                            locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getSpeed();
                     appendLog(logging,0);
                 }
                 if (distanciaParcial > LIMIT_DIST_PAR) {
