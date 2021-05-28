@@ -38,7 +38,7 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double VEL_LIMIT_MAX = 6.0;
+    private static final double VEL_LIMIT_MAX = 7.0;
     private static final double VEL_LIMIT_MIN = 1.0;
     private static final double R_TIERRA = 6371.0;
     private static final long LOCATION_INTERVAL = 1000;
