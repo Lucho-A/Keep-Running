@@ -60,46 +60,44 @@ public class MainActivity extends AppCompatActivity {
         imgMap.setVisibility(View.GONE);
         isRunning=false;
         btnComenzar= findViewById(R.id.btnComenzar);
-        btnComenzar.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if(!isRunning) {
-                    btnComenzar.setText("Detener");
-                    btnComenzar.setBackgroundColor(Color.parseColor("#FF0000"));
-                    txtFecha.setVisibility(View.GONE);
-                    txtHoraFin.setVisibility(View.GONE);
-                    txtHoraInicio.setVisibility(View.GONE);
-                    txtDistanciaTotal.setVisibility(View.GONE);
-                    txtTiempoTotal.setVisibility(View.GONE);
-                    imgMap.setVisibility(View.GONE);
-                    gpsService.onStartCommand(intent, 0, 0);
-                }else{
-                    btnComenzar.setText("Comenzar");
-                    btnComenzar.setBackgroundColor(Color.parseColor("#673AB7"));
-                    String puntoInicio=gpsService.getPuntoInicio();
-                    String url = "http://maps.google.com/maps/api/staticmap?path=color:0xff000080|weight:1" + gpsService.getCoorMaps() +
-                            "&size=200x200&markers=color:blue%7Clabel:Punto de Inicio|" + puntoInicio +"&scale=2&sensor=false&key=" + API_KEY;
-                    Log.e("coord: ", gpsService.getCoorMaps());
-                    new DownloadImageTask(findViewById(R.id.imgMap))
-                            .execute(url);
-                    gpsService.stopService();
-                    imgMap.setVisibility(View.VISIBLE);
-                    txtFecha.setVisibility(View.VISIBLE);
-                    txtHoraFin.setVisibility(View.VISIBLE);
-                    txtHoraInicio.setVisibility(View.VISIBLE);
-                    txtDistanciaTotal.setVisibility(View.VISIBLE);
-                    txtTiempoTotal.setVisibility(View.VISIBLE);
-                    txtFecha.setText("Fecha: " + gpsService.getFecha());
-                    txtHoraInicio.setText("Hora Inicio: " + gpsService.getHoraInicio());
-                    txtHoraFin.setText("Hora Fin: " + gpsService.getHoraFin());
-                    txtDistanciaTotal.setText("Distancia Total: " + gpsService.round(gpsService.getDistanciaTotalKM(),2) + " km");
-                    txtTiempoTotal.setText("Tiempo Total: " + gpsService.getTiempoTotal());
-                }
-                isRunning=!isRunning;
+        btnComenzar.setOnClickListener(v -> {
+            if(!isRunning) {
+                btnComenzar.setText("Detener");
+                btnComenzar.setBackgroundColor(Color.parseColor("#FF0000"));
+                txtFecha.setVisibility(View.GONE);
+                txtHoraFin.setVisibility(View.GONE);
+                txtHoraInicio.setVisibility(View.GONE);
+                txtDistanciaTotal.setVisibility(View.GONE);
+                txtTiempoTotal.setVisibility(View.GONE);
+                imgMap.setVisibility(View.GONE);
+                gpsService.onStartCommand(intent, 0, 0);
+            }else{
+                btnComenzar.setText("Comenzar");
+                btnComenzar.setBackgroundColor(Color.parseColor("#673AB7"));
+                String puntoInicio=gpsService.getPuntoInicio();
+                String url = "http://maps.google.com/maps/api/staticmap?path=color:0xff000080|weight:1" + gpsService.getCoorMaps() +
+                        "&size=200x200&markers=color:blue%7Clabel:Punto de Inicio|" + puntoInicio +"&scale=2&sensor=false&key=" + API_KEY;
+                Log.e("coord: ", gpsService.getCoorMaps());
+                new DownloadImageTask(findViewById(R.id.imgMap))
+                        .execute(url);
+                gpsService.stopService();
+                imgMap.setVisibility(View.VISIBLE);
+                txtFecha.setVisibility(View.VISIBLE);
+                txtHoraFin.setVisibility(View.VISIBLE);
+                txtHoraInicio.setVisibility(View.VISIBLE);
+                txtDistanciaTotal.setVisibility(View.VISIBLE);
+                txtTiempoTotal.setVisibility(View.VISIBLE);
+                txtFecha.setText("Fecha: " + gpsService.getFecha());
+                txtHoraInicio.setText("Hora Inicio: " + gpsService.getHoraInicio());
+                txtHoraFin.setText("Hora Fin: " + gpsService.getHoraFin());
+                txtDistanciaTotal.setText("Distancia Total: " + gpsService.round(gpsService.getDistanciaTotalKM(),2) + " km");
+                txtTiempoTotal.setText("Tiempo Total: " + gpsService.getTiempoTotal());
             }
+            isRunning=!isRunning;
         });
     }
 
-    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+    private static class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
         ImageView bmImage;
 
         public DownloadImageTask(ImageView bmImage) {
@@ -140,10 +138,9 @@ public class MainActivity extends AppCompatActivity {
     };
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        switch(keyCode) {
-            case KeyEvent.KEYCODE_BACK:
-                moveTaskToBack(true);
-                return true;
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            moveTaskToBack(true);
+            return true;
         }
         return false;
     }

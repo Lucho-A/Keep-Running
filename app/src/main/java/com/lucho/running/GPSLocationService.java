@@ -17,9 +17,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.SystemClock;
 import android.speech.tts.TextToSpeech;
-import android.util.Log;
 import android.widget.Toast;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -39,15 +37,16 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double VEL_LIMIT_MAX = 6.0;
-    private static final double VEL_LIMIT_MIN = 1.0;
-    private static final int MIN_SAT = 3;
-    private static final double DIST_MAX = 10.0;
+    private static final double LIMIT_VEL_MAX = 4.0;
+    private static final double LIMIT_VEL_MIN = 1.0;
+    private static final int LIMIT_MIN_SAT = 2;
+    private static final double LIMIT_DIST_MAX = 20.0;
+    private static final int LIMIT_DIST_MAP = 50;
+    private static final int LIMIT_DIST_PAR = 1000;
+    private static final int LIMIT_INT_UBI_INICIAL = 3;
     private static final double R_TIERRA = 6371.0;
     private static final long LOCATION_INTERVAL = 1000;
     private static final float LOCATION_DISTANCE = (float) 0.1;
-    private static final int LIMIT_DIST_MAP = 50;
-    private static final int LIMIT_DIST_PAR = 1000;
     private final SimpleDateFormat timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
@@ -81,11 +80,7 @@ public class GPSLocationService extends Service{
 
     public void onCreate() {
         mContext=this;
-        tts =new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-            public void onInit(int status) {
-                tts.setLanguage(new Locale("es","LA"));
-            }
-        });
+        tts =new TextToSpeech(getApplicationContext(), status -> tts.setLanguage(new Locale("es","LA")));
         mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
     }
 
@@ -105,11 +100,11 @@ public class GPSLocationService extends Service{
         distanciaParcialMap =0;
         log_name =timeStamp.format(Calendar.getInstance().getTime());
         appendLog("Running comenzado: " + Calendar.getInstance().getTime(),0);
-        appendLog("Fecha/Hora;Distancia(m);Distancia Parcial(m);Distancia Total(km);Latitud;Longitud;Velocidad;Velocidad GPS",0);
+        appendLog("Fecha/Hora;Distancia(m);Distancia Parcial(m);Distancia Total(km);Latitud;Longitud;Velocidad (GPS)",0);
         play();
         fechaHoraComienzo= Calendar.getInstance().getTime();
         horaAnterior=Calendar.getInstance().getTime();
-        tts.speak("¡Comenzando el running!", TextToSpeech.QUEUE_FLUSH, null);
+        //tts.speak("Buscando ubicación actual...", TextToSpeech.QUEUE_FLUSH, null);
         startListening();
         return START_NOT_STICKY;
     }
@@ -124,12 +119,15 @@ public class GPSLocationService extends Service{
         }
         if(mPlayer!=null) {
             mPlayer.stop();
+            mPlayer.release();
+            mPlayer=null;
         }
         fechaHoraFin=Calendar.getInstance().getTime();
         appendLog("Running finalizado: " + Calendar.getInstance().getTime(),0);
         loguearInfoCarrera();
         isRunning = false;
         actualizarNotification();
+        tts.speak("Running finalizado", TextToSpeech.QUEUE_FLUSH, null);
         stopForeground(true);
         onDestroy();
     }
@@ -157,12 +155,12 @@ public class GPSLocationService extends Service{
     }
 
     public void startListening() {
-        mLocationListener = new LocationListener(LocationManager.GPS_PROVIDER);
+        mLocationListener = new LocationListener();
         try {
             mLocationManager.requestLocationUpdates( LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE, mLocationListener );
             isLocationEnabled();
         } catch (java.lang.SecurityException | IllegalArgumentException ex) {
-            appendLog(timeStamp.format(Calendar.getInstance().getTime()) + "FallÃ³ el start Listening",-1);
+            appendLog(timeStamp.format(Calendar.getInstance().getTime()) + "Falló el start Listening",-1);
             exit(0);
         }
         isRunning = true;
@@ -233,12 +231,7 @@ public class GPSLocationService extends Service{
                 } catch (IllegalStateException e) {
                     e.printStackTrace();
                 }
-                mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                    @Override
-                    public void onPrepared(MediaPlayer mediaPlayer) {
-                        mediaPlayer.start();
-                    }
-                });
+                mediaPlayer.setOnPreparedListener(mediaPlayer1 -> mediaPlayer1.start());
             }
         });
     }
@@ -247,8 +240,11 @@ public class GPSLocationService extends Service{
         File dir = new File(MUSIC_PATH);
         String[] files = dir.list();
         Random rand = new Random();
-        int random_index = rand.nextInt(files.length);
-        return (files[random_index]);
+        if(files!=null) {
+            int random_index = rand.nextInt(files.length);
+            return (files[random_index]);
+        }
+        return "";
     }
 
     public void loguearInfoCarrera(){
@@ -259,7 +255,7 @@ public class GPSLocationService extends Service{
         long secs = (int) (mills / 1000) % 60;
         appendLog("Hora Inicio: " + timeFormat.format(fechaHoraComienzo),1);
         appendLog("Hora Fin: " + timeFormat.format(fechaHoraFin),1);
-        appendLog("Distancia Total: " + distanciaTotal/1000 + " km",1);
+        appendLog("Distancia Total: " + round(distanciaTotal/1000,2) + " km",1);
         appendLog("Tiempo Total: " + hours + "." + mins + "." + secs ,1);
         appendLog("Coordenadas de origen: " + locInicio.getLatitude() + "," + locInicio.getLongitude() ,1);
     }
@@ -290,8 +286,7 @@ public class GPSLocationService extends Service{
     }
 
     public static BigDecimal round(double d, int decimalPlace) {
-        BigDecimal bd = new BigDecimal(String.valueOf(d)).setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
-        return bd;
+        return new BigDecimal(String.valueOf(d)).setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);
     }
 
     public void appendLog(String text, int tipo) {
@@ -312,14 +307,6 @@ public class GPSLocationService extends Service{
             default:
                 logFile = new File(LOG_PATH + log_name + "_DEBUG.log");
                 break;
-        }
-        if (!logFile.exists()){
-            try{
-                logFile.createNewFile();
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
         }
         try {
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
@@ -344,7 +331,7 @@ public class GPSLocationService extends Service{
                     .setContentTitle("Running v6")
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(false);
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "NotificaciÃ³n para el Servicio", NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Notificación para el Servicio", NotificationManager.IMPORTANCE_DEFAULT);
             notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
@@ -367,75 +354,59 @@ public class GPSLocationService extends Service{
 
     private class LocationListener implements android.location.LocationListener {
 
-        public LocationListener(String provider) {
-        }
-
-        public double calcularSegundos(Location last) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                //J7 PRIME Yeahhh (appendLog("Post 17>=JELLY_BEAN_MR1",-5);)
-                long difNanos = (SystemClock.elapsedRealtimeNanos() - last.getElapsedRealtimeNanos());
-                return difNanos / 100000000.0;
-            }else {
-                return System.currentTimeMillis() - last.getTime();
-            }
+        public LocationListener() {
         }
 
         public void onLocationChanged(Location location) {
             locActual = location;
-            Boolean esMedidaValida = false;
             double distanciaEntreLoc = distance_between();
             mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
-            if (distanciaEntreLoc<DIST_MAX &&
-                    locActual.getExtras().getInt("satellites")>MIN_SAT &&
-                    locActual.hasSpeed() &&
-                    locActual.getSpeed() > VEL_LIMIT_MIN &&
-                    locActual.getSpeed() < VEL_LIMIT_MAX) {
-                esMedidaValida = true;
-            }
-            double vel=locActual.getSpeed();
             if(locInicio.getLatitude()==0) {
-                if(contLocInicio==3) {
+                if(contLocInicio==LIMIT_INT_UBI_INICIAL) {
                     locInicio = location;
                     coordMap = coordMap + locInicio.getLatitude() + "," + locInicio.getLongitude();
                     appendLog(coordMap, 2);
                     coordMap = coordMap + "|" + coordMap;
+                    tts.speak("Ubicación actual localizada...", TextToSpeech.QUEUE_FLUSH, null);
                 }else{
                     contLocInicio++;
                 }
             }else {
-                //double segundos = calcularSegundos(locActual);
-                //double vel = distanciaEntreLoc / segundos;
-                if(esMedidaValida) {
+                if (distanciaEntreLoc< LIMIT_DIST_MAX &&
+                        locActual.getExtras().getInt("satellites") > LIMIT_MIN_SAT &&
+                        locActual.hasSpeed() &&
+                        locActual.getSpeed() > LIMIT_VEL_MIN &&
+                        locActual.getSpeed() < LIMIT_VEL_MAX) {
                     distanciaTotal += distanciaEntreLoc;
                     distanciaParcial += distanciaEntreLoc;
                     distanciaParcialMap += distanciaEntreLoc;
                     String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" +
-                            distanciaEntreLoc + ";" + distanciaParcial + ";" + distanciaTotal/1000.0 +
+                            round(distanciaEntreLoc,2) + ";" + round(distanciaParcial,2) + ";" + round(distanciaTotal/1000.0,2) +
                             locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getSpeed();
                     appendLog(logging,0);
-                }
-                if (distanciaParcial > LIMIT_DIST_PAR) {
-                    kmsParciales++;
-                    tiempoPorKM(kmsParciales);
-                    distanciaParcial = 0;
-                }
-                if(distanciaParcialMap > LIMIT_DIST_MAP){
-                    String coord=locActual.getLatitude()+","+locActual.getLongitude();
-                    appendLog(coord,2);
-                    coordMap=coordMap+"|"+coord;
-                    distanciaParcialMap = 0;
-                    actualizarNotification();
+                    if (distanciaParcial > LIMIT_DIST_PAR) {
+                        kmsParciales++;
+                        tiempoPorKM(kmsParciales);
+                        distanciaParcial = 0;
+                    }
+                    if(distanciaParcialMap > LIMIT_DIST_MAP){
+                        String coord=locActual.getLatitude()+","+locActual.getLongitude();
+                        appendLog(coord,2);
+                        coordMap=coordMap+"|"+coord;
+                        distanciaParcialMap = 0;
+                        actualizarNotification();
+                    }
+                    locAnterior=locActual;
                 }
             }
-            locAnterior=locActual;
         }
 
         public void onProviderDisabled(String provider) {
-            tts.speak("Sin seÃ±al GPS", TextToSpeech.QUEUE_FLUSH, null);
+            tts.speak("Sin señal GPS", TextToSpeech.QUEUE_FLUSH, null);
         }
 
         public void onProviderEnabled(String provider) {
-            tts.speak("Con seÃ±al GPS", TextToSpeech.QUEUE_FLUSH, null);
+            tts.speak("Con señal GPS", TextToSpeech.QUEUE_FLUSH, null);
         }
 
         public void onStatusChanged(String provider, int status, Bundle extras){
