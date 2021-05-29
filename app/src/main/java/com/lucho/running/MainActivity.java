@@ -23,11 +23,18 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
+    private final static int REQUEST_CODE_ASK_PERMISSIONS = 1;
+    private static final String[] REQUIRED_SDK_PERMISSIONS = new String[] {
+            Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE };
     private static final String API_KEY = "AIzaSyDOV_bXWDPpAEYPjYs6bL0UowQe1TAflMg";
     private GPSLocationService gpsService;
     private Button btnComenzar;
@@ -38,14 +45,13 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtTiempoTotal;
     private ImageView imgMap;
     private Boolean isRunning;
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final Intent intent = new Intent(this.getApplication(), GPSLocationService.class);
         this.getApplication().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
-        isReadStoragePermissionGranted();
-        isWriteStoragePermissionGranted();
-        isLocationPermissionGranted();
+        checkPermissions();
         imgMap=findViewById(R.id.imgMap);
         txtFecha=findViewById(R.id.txtFecha);
         txtHoraInicio=findViewById(R.id.txtHoraInicio);
@@ -145,64 +151,41 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    private boolean isReadStoragePermissionGranted() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.v("App","Permission is granted");
-                return true;
-            } else {
-                Log.v("App","Permission is revoked");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 3);
-                return false;
+    protected void checkPermissions() {
+        final List<String> missingPermissions = new ArrayList<String>();
+        for (final String permission : REQUIRED_SDK_PERMISSIONS) {
+            final int result = ContextCompat.checkSelfPermission(this, permission);
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(permission);
             }
         }
-        else {
-            Log.v("App","Permission is granted");
-            return true;
+        if (!missingPermissions.isEmpty()) {
+            final String[] permissions = missingPermissions
+                    .toArray(new String[missingPermissions.size()]);
+            ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_ASK_PERMISSIONS);
+        } else {
+            final int[] grantResults = new int[REQUIRED_SDK_PERMISSIONS.length];
+            Arrays.fill(grantResults, PackageManager.PERMISSION_GRANTED);
+            onRequestPermissionsResult(REQUEST_CODE_ASK_PERMISSIONS, REQUIRED_SDK_PERMISSIONS,
+                    grantResults);
         }
     }
 
-    private boolean isWriteStoragePermissionGranted() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.v("App","Permission is granted");
-                return true;
-            } else {
-                Log.v("App","Permission is revoked");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
-                return false;
-            }
-        }
-        else {
-            Log.v("App","Permission is granted");
-            return true;
-        }
-    }
-
-    private boolean isLocationPermissionGranted() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.v("App","Permission is granted");
-                return true;
-            } else {
-                Log.v("App","Permission is revoked");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 2);
-                return false;
-            }
-        }
-        else {
-            Log.v("App","Permission is granted");
-            return true;
-        }
-    }
-
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-            Log.v("App","Permission: "+permissions[0]+ "was "+grantResults[0]);
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_PERMISSIONS:
+                for (int index = permissions.length - 1; index >= 0; --index) {
+                    if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
+                        Toast.makeText(this, "Required permission '" + permissions[index]
+                                + "' not granted, exiting", Toast.LENGTH_LONG).show();
+                        finish();
+                        return;
+                    }
+                }
+                break;
         }
     }
 }
