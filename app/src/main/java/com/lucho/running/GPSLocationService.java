@@ -38,10 +38,13 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double LIMIT_VEL_MAX = 5.0;
-    private static final double LIMIT_VEL_MIN = 1.0;
-    private static final int LIMIT_MIN_SAT = 2;
-    private static final double LIMIT_DIST_MAX = 20.0;
+    private static final double VEL_PROM = 2.8974885003; // tomado de una excelente medición
+    private static final double DIST_PROM = 3.5337396884; // tomado de una excelente medición
+    private static final double LIMIT_VEL_MAX = VEL_PROM + 1.0;
+    private static final double LIMIT_VEL_MIN = VEL_PROM - 1.0;
+    private static final double LIMIT_DIST_MAX = DIST_PROM + 1.0;
+    private static final double LIMIT_DIST_MIN = DIST_PROM - 1.0;
+    private static final int LIMIT_MIN_SAT = 3;
     private static final int LIMIT_DIST_MAP = 50;
     private static final int LIMIT_DIST_PAR = 1000;
     private static final int LIMIT_INT_UBI_INICIAL = 3;
@@ -258,6 +261,8 @@ public class GPSLocationService extends Service{
         appendLog("Hora Fin: " + timeFormat.format(fechaHoraFin),1);
         appendLog("Distancia Total: " + round(distanciaTotal/1000,2) + " km",1);
         appendLog("Tiempo Total: " + hours + "." + mins + "." + secs ,1);
+        appendLog("Velocidad promedio: " + (mins+hours*60)/(distanciaTotal/1000) + "'"
+                + secs/(distanciaTotal/1000) + "'' min/km",1);
         appendLog("Coordenadas de origen: " + locInicio.getLatitude() + "," + locInicio.getLongitude() ,1);
     }
 
@@ -329,7 +334,7 @@ public class GPSLocationService extends Service{
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
             builder= new Notification.Builder(getApplicationContext(), CHANNEL_ID)
                     .setSmallIcon(R.drawable.descarga)
-                    .setContentTitle("Running v6")
+                    .setContentTitle("Running")
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(false);
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Notificación para el Servicio", NotificationManager.IMPORTANCE_DEFAULT);
@@ -341,10 +346,10 @@ public class GPSLocationService extends Service{
 
     private void actualizarNotification() {
         if(isRunning) {
-            builder.setContentTitle("Running v6: comenzado...");
+            builder.setContentTitle("Running: comenzado...");
             builder.setContentText("Distancia Total: " + round(getDistanciaTotalKM(),2) + " km");
         }else{
-            builder.setContentTitle("Running v6: detenido...");
+            builder.setContentTitle("Running: detenido...");
             builder.setContentText("");
         }
         notificationManager.notify(NOTIFICATION_ID, builder.build());
@@ -366,26 +371,27 @@ public class GPSLocationService extends Service{
                 if(contLocInicio==LIMIT_INT_UBI_INICIAL) {
                     locInicio = location;
                     String coord=locInicio.getLatitude() + "," + locInicio.getLongitude();
-                    coordMap = coordMap + coord;
-                    appendLog(coordMap, 2);
+                    appendLog(coord, 2);
                     coordMap = "|" + coord;
                     tts.speak("Ubicación actual localizada...", TextToSpeech.QUEUE_FLUSH, null);
                 }else{
                     contLocInicio++;
                 }
             }else {
-                if (distanciaEntreLoc< LIMIT_DIST_MAX &&
+                if (distanciaEntreLoc < LIMIT_DIST_MAX &&
+                        distanciaEntreLoc > LIMIT_DIST_MIN &&
                         locActual.getExtras().getInt("satellites") > LIMIT_MIN_SAT &&
                         locActual.hasSpeed() &&
                         locActual.getSpeed() > LIMIT_VEL_MIN &&
                         locActual.getSpeed() < LIMIT_VEL_MAX) {
-                    //Log.e("Entro",locAnterior.distanceTo(locActual)+" m");
                     distanciaTotal += distanciaEntreLoc;
                     distanciaParcial += distanciaEntreLoc;
                     distanciaParcialMap += distanciaEntreLoc;
-                    String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" +
-                            round(distanciaEntreLoc,2) + ";" + round(distanciaParcial,2) + ";" + round(distanciaTotal/1000.0,2) +
-                            ";" + locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getSpeed();
+                    String logging=timeStamp.format(Calendar.getInstance().getTime()) +
+                            ";" + round(distanciaEntreLoc,2) +
+                            ";" + locActual.getLatitude() +
+                            ";" + locActual.getLongitude() +
+                            ";" + locActual.getSpeed();
                     appendLog(logging,0);
                     if (distanciaParcial > LIMIT_DIST_PAR) {
                         kmsParciales++;
@@ -402,10 +408,13 @@ public class GPSLocationService extends Service{
                 }
             }
             locAnterior=locActual;
-            String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" +
-                    round(distanciaEntreLoc,2) + ";" + round(distanciaParcial,2) + ";" + round(distanciaTotal/1000.0,2) +
-                    ";" + locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getSpeed() + ";" +
-                    locActual.getExtras().getInt("satellites") + ";" + round(locAnterior.distanceTo(locActual),2);
+            String logging=timeStamp.format(Calendar.getInstance().getTime()) +
+                    ";" + round(distanciaEntreLoc,2) +
+                    ";" + round(distanciaParcial,2) +
+                    ";" + round(distanciaTotal/1000.0,2) +
+                    ";" + locActual.getLatitude() + ";" + locActual.getLongitude() +
+                    ";" + locActual.getSpeed() + ";" +
+                    locActual.getExtras().getInt("satellites");
             appendLog(logging,-5);
         }
 
