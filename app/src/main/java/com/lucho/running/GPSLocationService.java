@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import android.widget.Toast;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -37,7 +38,7 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double LIMIT_VEL_MAX = 4.0;
+    private static final double LIMIT_VEL_MAX = 5.0;
     private static final double LIMIT_VEL_MIN = 1.0;
     private static final int LIMIT_MIN_SAT = 2;
     private static final double LIMIT_DIST_MAX = 20.0;
@@ -364,9 +365,10 @@ public class GPSLocationService extends Service{
             if(locInicio.getLatitude()==0) {
                 if(contLocInicio==LIMIT_INT_UBI_INICIAL) {
                     locInicio = location;
-                    coordMap = coordMap + locInicio.getLatitude() + "," + locInicio.getLongitude();
+                    String coord=locInicio.getLatitude() + "," + locInicio.getLongitude();
+                    coordMap = coordMap + coord;
                     appendLog(coordMap, 2);
-                    coordMap = coordMap + "|" + coordMap;
+                    coordMap = "|" + coord;
                     tts.speak("Ubicación actual localizada...", TextToSpeech.QUEUE_FLUSH, null);
                 }else{
                     contLocInicio++;
@@ -377,12 +379,13 @@ public class GPSLocationService extends Service{
                         locActual.hasSpeed() &&
                         locActual.getSpeed() > LIMIT_VEL_MIN &&
                         locActual.getSpeed() < LIMIT_VEL_MAX) {
+                    //Log.e("Entro",locAnterior.distanceTo(locActual)+" m");
                     distanciaTotal += distanciaEntreLoc;
                     distanciaParcial += distanciaEntreLoc;
                     distanciaParcialMap += distanciaEntreLoc;
                     String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" +
                             round(distanciaEntreLoc,2) + ";" + round(distanciaParcial,2) + ";" + round(distanciaTotal/1000.0,2) +
-                            locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getSpeed();
+                            ";" + locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getSpeed();
                     appendLog(logging,0);
                     if (distanciaParcial > LIMIT_DIST_PAR) {
                         kmsParciales++;
@@ -396,9 +399,14 @@ public class GPSLocationService extends Service{
                         distanciaParcialMap = 0;
                         actualizarNotification();
                     }
-                    locAnterior=locActual;
                 }
             }
+            locAnterior=locActual;
+            String logging=timeStamp.format(Calendar.getInstance().getTime()) + ";" +
+                    round(distanciaEntreLoc,2) + ";" + round(distanciaParcial,2) + ";" + round(distanciaTotal/1000.0,2) +
+                    ";" + locActual.getLatitude() + ";" + locActual.getLongitude() + ";" + locActual.getSpeed() + ";" +
+                    locActual.getExtras().getInt("satellites") + ";" + round(locAnterior.distanceTo(locActual),2);
+            appendLog(logging,-5);
         }
 
         public void onProviderDisabled(String provider) {
