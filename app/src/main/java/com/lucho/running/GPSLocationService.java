@@ -38,12 +38,13 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double VEL_PROM = 2.8974885003; // tomado de una excelente medición
-    private static final double DIST_PROM = 3.5337396884; // tomado de una excelente medición
-    private static final double LIMIT_VEL_MAX = VEL_PROM + 1.0;
-    private static final double LIMIT_VEL_MIN = VEL_PROM - 1.0;
-    private static final double LIMIT_DIST_MAX = DIST_PROM + 1.0;
-    private static final double LIMIT_DIST_MIN = DIST_PROM - 1.0;
+    private static final double VEL_PROM = 2.89748850027497; // tomado de una excelente medición (20210529)
+    private static final double DIST_PROM = 3.5337396883593; // tomado de una excelente medición (20210529)
+    private static final double DESVIO_DELTA = 1.0;
+    private static final double LIMIT_VEL_MAX = VEL_PROM + DESVIO_DELTA;
+    private static final double LIMIT_VEL_MIN = VEL_PROM - DESVIO_DELTA;
+    private static final double LIMIT_DIST_MAX = DIST_PROM + DESVIO_DELTA;
+    private static final double LIMIT_DIST_MIN = DIST_PROM - DESVIO_DELTA;
     private static final int LIMIT_MIN_SAT = 3;
     private static final int LIMIT_DIST_MAP = 50;
     private static final int LIMIT_DIST_PAR = 1000;
@@ -67,6 +68,7 @@ public class GPSLocationService extends Service{
     private Location locInicio;
     private Location locActual;
     private Location locAnterior;
+    private int contLocInicio;
     private int kmsParciales;
     private double distanciaTotal;
     private double distanciaParcial;
@@ -76,7 +78,6 @@ public class GPSLocationService extends Service{
     private String log_name;
     private Notification.Builder builder;
     private NotificationManager notificationManager;
-    private int contLocInicio;
 
     public IBinder onBind(Intent intent) {
         return binder;
@@ -93,22 +94,21 @@ public class GPSLocationService extends Service{
         initializeLocationManager();
         startForeground(NOTIFICATION_ID, crearNotification());
         isRunning = false;
-        coordMap="|";
-        contLocInicio=0;
-        locInicio=new Location("locInicio");
+        coordMap = "|";
+        contLocInicio = 0;
+        locInicio = new Location("locInicio");
         locActual = new Location("locActual");
         locAnterior = new Location("locAnterior");
-        kmsParciales =0;
-        distanciaTotal =0;
-        distanciaParcial =0;
-        distanciaParcialMap =0;
+        kmsParciales = 0;
+        distanciaTotal = 0;
+        distanciaParcial = 0;
+        distanciaParcialMap = 0;
         log_name =timeStamp.format(Calendar.getInstance().getTime());
         appendLog("Running comenzado: " + Calendar.getInstance().getTime(),0);
         appendLog("Fecha/Hora;Distancia(m);Distancia Parcial(m);Distancia Total(km);Latitud;Longitud;Velocidad (GPS)",0);
         play();
         fechaHoraComienzo= Calendar.getInstance().getTime();
         horaAnterior=Calendar.getInstance().getTime();
-        //tts.speak("Buscando ubicación actual...", TextToSpeech.QUEUE_FLUSH, null);
         startListening();
         return START_NOT_STICKY;
     }
@@ -171,11 +171,11 @@ public class GPSLocationService extends Service{
         actualizarNotification();
     }
 
-    public String getFecha() {
+    public String getFechaComienzo() {
         return dateFormat.format(fechaHoraComienzo);
     }
 
-    public String getHoraInicio() {
+    public String getHoraComienzo() {
         return timeFormat.format(fechaHoraComienzo);
     }
 
@@ -221,22 +221,19 @@ public class GPSLocationService extends Service{
         mPlayer = MediaPlayer.create(this, proxTema());
         mPlayer.setLooping(false);
         mPlayer.start();
-        mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mediaPlayer) {
-                mediaPlayer.reset();
-                try {
-                    mediaPlayer.setDataSource(mContext, proxTema());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    mediaPlayer.prepareAsync();
-                } catch (IllegalStateException e) {
-                    e.printStackTrace();
-                }
-                mediaPlayer.setOnPreparedListener(mediaPlayer1 -> mediaPlayer1.start());
+        mPlayer.setOnCompletionListener(mediaPlayer -> {
+            mediaPlayer.reset();
+            try {
+                mediaPlayer.setDataSource(mContext, proxTema());
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+            try {
+                mediaPlayer.prepareAsync();
+            } catch (IllegalStateException e) {
+                e.printStackTrace();
+            }
+            mediaPlayer.setOnPreparedListener(mediaPlayer1 -> mediaPlayer1.start());
         });
     }
 
@@ -264,6 +261,7 @@ public class GPSLocationService extends Service{
         appendLog("Velocidad promedio: " + (mins+hours*60)/(distanciaTotal/1000) + "'"
                 + secs/(distanciaTotal/1000) + "'' min/km",1);
         appendLog("Coordenadas de origen: " + locInicio.getLatitude() + "," + locInicio.getLongitude() ,1);
+        // ver calorias
     }
 
     double distance_between() {

@@ -14,7 +14,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -93,8 +92,8 @@ public class MainActivity extends AppCompatActivity {
                 txtHoraInicio.setVisibility(View.VISIBLE);
                 txtDistanciaTotal.setVisibility(View.VISIBLE);
                 txtTiempoTotal.setVisibility(View.VISIBLE);
-                txtFecha.setText("Fecha: " + gpsService.getFecha());
-                txtHoraInicio.setText("Hora Inicio: " + gpsService.getHoraInicio());
+                txtFecha.setText("Fecha: " + gpsService.getFechaComienzo());
+                txtHoraInicio.setText("Hora Inicio: " + gpsService.getHoraComienzo());
                 txtHoraFin.setText("Hora Fin: " + gpsService.getHoraFin());
                 txtDistanciaTotal.setText("Distancia Total: " + gpsService.round(gpsService.getDistanciaTotalKM(),2) + " km");
                 txtTiempoTotal.setText("Tiempo Total: " + gpsService.getTiempoTotal());
