@@ -18,7 +18,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.speech.tts.TextToSpeech;
-import android.util.Log;
 import android.widget.Toast;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,9 +37,9 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double VEL_PROM = 2.89748850027497; // tomado de una excelente medición (20210529)
-    private static final double DIST_PROM = 3.5337396883593; // tomado de una excelente medición (20210529)
-    private static final double DESVIO_DELTA = 1.0;
+    private static final double VEL_PROM = 2.89748850027497; // tomado de medición (20210529)
+    private static final double DIST_PROM = 3.5337396883593; // tomado de medición (20210529)
+    private static final double DESVIO_DELTA = 1.2; // corregido el 20210530 1.0 --> 1.2
     private static final double LIMIT_VEL_MAX = VEL_PROM + DESVIO_DELTA;
     private static final double LIMIT_VEL_MIN = VEL_PROM - DESVIO_DELTA;
     private static final double LIMIT_DIST_MAX = DIST_PROM + DESVIO_DELTA;
@@ -105,7 +104,7 @@ public class GPSLocationService extends Service{
         distanciaParcialMap = 0;
         log_name =timeStamp.format(Calendar.getInstance().getTime());
         appendLog("Running comenzado: " + Calendar.getInstance().getTime(),0);
-        appendLog("Fecha/Hora;Distancia(m);Distancia Parcial(m);Distancia Total(km);Latitud;Longitud;Velocidad (GPS)",0);
+        appendLog("Fecha/Hora;Distancia(m);Latitud;Longitud;Velocidad (GPS)",0);
         play();
         fechaHoraComienzo= Calendar.getInstance().getTime();
         horaAnterior=Calendar.getInstance().getTime();
@@ -233,7 +232,7 @@ public class GPSLocationService extends Service{
             } catch (IllegalStateException e) {
                 e.printStackTrace();
             }
-            mediaPlayer.setOnPreparedListener(mediaPlayer1 -> mediaPlayer1.start());
+            mediaPlayer.setOnPreparedListener(MediaPlayer::start);
         });
     }
 
@@ -254,13 +253,14 @@ public class GPSLocationService extends Service{
         int hours = (int) (mills/(1000 * 60 * 60));
         int mins = (int) (mills/(1000*60)) % 60;
         long secs = (int) (mills / 1000) % 60;
+        double velProm=mills/getDistanciaTotalKM();
         appendLog("Hora Inicio: " + timeFormat.format(fechaHoraComienzo),1);
         appendLog("Hora Fin: " + timeFormat.format(fechaHoraFin),1);
         appendLog("Distancia Total: " + round(distanciaTotal/1000,2) + " km",1);
-        appendLog("Tiempo Total: " + hours + "." + mins + "." + secs ,1);
-        appendLog("Velocidad promedio: " + (mins+hours*60)/(distanciaTotal/1000) + "'"
-                + secs/(distanciaTotal/1000) + "'' min/km",1);
+        appendLog("Tiempo Total: " + hours + ":" + mins + ":" + secs,1);
+        appendLog("Velocidad promedio: " + (int)(velProm/1000*60)%60 + "'" + (int)(velProm/1000)%60 + "'' min/km",1);
         appendLog("Coordenadas de origen: " + locInicio.getLatitude() + "," + locInicio.getLongitude() ,1);
+        appendLog("Coordenadas finales: " + locActual.getLatitude() + "," + locActual.getLongitude() ,1);
         // ver calorias
     }
 
