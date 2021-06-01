@@ -37,9 +37,9 @@ public class GPSLocationService extends Service{
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
-    private static final double VEL_PROM = 2.89748850027497; // tomado de medición (20210529)
-    private static final double DIST_PROM = 3.5337396883593; // tomado de medición (20210529)
-    private static final double DESVIO_DELTA = 1.2; // corregido el 20210530 1.0 --> 1.2
+    private static final double VEL_PROM = 2.84561118987206; // ajustado de acuerdo a carrera 20210531
+    private static final double DIST_PROM = 3.49850390902629; // ajustado de acuerdo a carrera 20210531
+    private static final double DESVIO_DELTA = 1.3; // OK de acuerdo a la carrera del 20210531
     private static final double LIMIT_VEL_MAX = VEL_PROM + DESVIO_DELTA;
     private static final double LIMIT_VEL_MIN = VEL_PROM - DESVIO_DELTA;
     private static final double LIMIT_DIST_MAX = DIST_PROM + DESVIO_DELTA;
@@ -258,7 +258,7 @@ public class GPSLocationService extends Service{
         appendLog("Hora Fin: " + timeFormat.format(fechaHoraFin),1);
         appendLog("Distancia Total: " + round(distanciaTotal/1000,2) + " km",1);
         appendLog("Tiempo Total: " + hours + ":" + mins + ":" + secs,1);
-        appendLog("Velocidad promedio: " + (int)(velProm/1000*60)%60 + "'" + (int)(velProm/1000)%60 + "'' min/km",1);
+        appendLog("Velocidad promedio: " + (int)(velProm/(1000*60))%60 + "'" + (int)(velProm/1000)%60 + "'' min/km",1);
         appendLog("Coordenadas de origen: " + locInicio.getLatitude() + "," + locInicio.getLongitude() ,1);
         appendLog("Coordenadas finales: " + locActual.getLatitude() + "," + locActual.getLongitude() ,1);
         // ver calorias
@@ -334,6 +334,7 @@ public class GPSLocationService extends Service{
                     .setSmallIcon(R.drawable.descarga)
                     .setContentTitle("Running")
                     .setContentIntent(pendingIntent)
+                    .setOnlyAlertOnce(true)
                     .setAutoCancel(false);
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Notificación para el Servicio", NotificationManager.IMPORTANCE_DEFAULT);
             notificationManager = getSystemService(NotificationManager.class);
