@@ -42,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtHoraFin;
     private TextView txtDistanciaTotal;
     private TextView txtTiempoTotal;
+    private TextView txtVelProm;
+    private TextView txtCalConsum;
     private ImageView imgMap;
     private Boolean isRunning;
 
@@ -57,11 +59,15 @@ public class MainActivity extends AppCompatActivity {
         txtHoraFin=findViewById(R.id.txtHoraFin);
         txtDistanciaTotal=findViewById(R.id.txtDistanciaTotal);
         txtTiempoTotal=findViewById(R.id.txtTiempoTotal);
+        txtVelProm=findViewById(R.id.txtVelProm);
+        txtCalConsum=findViewById(R.id.txtCaloriasConsum);
         txtFecha.setVisibility(View.GONE);
         txtHoraFin.setVisibility(View.GONE);
         txtHoraInicio.setVisibility(View.GONE);
         txtDistanciaTotal.setVisibility(View.GONE);
         txtTiempoTotal.setVisibility(View.GONE);
+        txtVelProm.setVisibility(View.GONE);
+        txtCalConsum.setVisibility(View.GONE);
         imgMap.setVisibility(View.GONE);
         isRunning=false;
         btnComenzar= findViewById(R.id.btnComenzar);
@@ -74,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
                 txtHoraInicio.setVisibility(View.GONE);
                 txtDistanciaTotal.setVisibility(View.GONE);
                 txtTiempoTotal.setVisibility(View.GONE);
+                txtVelProm.setVisibility(View.GONE);
+                txtCalConsum.setVisibility(View.GONE);
                 imgMap.setVisibility(View.GONE);
                 gpsService.onStartCommand(intent, 0, 0);
             }else{
@@ -92,11 +100,15 @@ public class MainActivity extends AppCompatActivity {
                 txtHoraInicio.setVisibility(View.VISIBLE);
                 txtDistanciaTotal.setVisibility(View.VISIBLE);
                 txtTiempoTotal.setVisibility(View.VISIBLE);
+                txtVelProm.setVisibility(View.VISIBLE);
+                txtCalConsum.setVisibility(View.VISIBLE);
                 txtFecha.setText("Fecha: " + gpsService.getFechaComienzo());
                 txtHoraInicio.setText("Hora Inicio: " + gpsService.getHoraComienzo());
                 txtHoraFin.setText("Hora Fin: " + gpsService.getHoraFin());
                 txtDistanciaTotal.setText("Distancia Total: " + gpsService.round(gpsService.getDistanciaTotalKM(),2) + " km");
                 txtTiempoTotal.setText("Tiempo Total: " + gpsService.getTiempoTotal());
+                txtVelProm.setText("Vel. Prom: " + gpsService.getVelProm());
+                txtCalConsum.setText("Calorías Consum.: " + gpsService.getCaloriesBurned());
             }
             isRunning=!isRunning;
         });

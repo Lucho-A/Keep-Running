@@ -190,10 +190,17 @@ public class GPSLocationService extends Service{
         int hours = (int) (mills/(1000 * 60 * 60));
         int mins = (int) (mills/(1000*60)) % 60;
         long secs = (int) (mills / 1000) % 60;
-        return hours + "." + mins + "." + secs;
+        return hours + ":" + mins + ":" + secs;
     }
 
     public String getPuntoInicio() { return locInicio.getLatitude() + "," + locInicio.getLongitude(); }
+
+    public String getVelProm() {
+        long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();
+        long mills = Math.abs(millse);
+        double velProm=mills/getDistanciaTotalKM();
+        return (int)(velProm/(1000*60))%60 + "'" + (int)(velProm/1000)%60 + "'' min/km";
+    }
 
     public class LocationServiceBinder extends Binder {
         public GPSLocationService getService() {
@@ -246,6 +253,13 @@ public class GPSLocationService extends Service{
         }
         return "";
     }
+    public String getCaloriesBurned(){
+        long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();
+        long mills = Math.abs(millse);;
+        int mins = (int) (mills/(1000*60));
+        double calBurn= ((43 * 0.2017) + (70 * 2.20462 * 0.09036) + (150 * 0.6309) - 55.0969) * (mins / 4.184);
+        return round(calBurn,2) + " cal.";
+    }
 
     public void loguearInfoCarrera(){
         long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();
@@ -253,12 +267,11 @@ public class GPSLocationService extends Service{
         int hours = (int) (mills/(1000 * 60 * 60));
         int mins = (int) (mills/(1000*60)) % 60;
         long secs = (int) (mills / 1000) % 60;
-        double velProm=mills/getDistanciaTotalKM();
         appendLog("Hora Inicio: " + timeFormat.format(fechaHoraComienzo),1);
         appendLog("Hora Fin: " + timeFormat.format(fechaHoraFin),1);
         appendLog("Distancia Total: " + round(distanciaTotal/1000,2) + " km",1);
         appendLog("Tiempo Total: " + hours + ":" + mins + ":" + secs,1);
-        appendLog("Velocidad promedio: " + (int)(velProm/(1000*60))%60 + "'" + (int)(velProm/1000)%60 + "'' min/km",1);
+        appendLog("Velocidad promedio: " + getVelProm(),1);
         appendLog("Coordenadas de origen: " + locInicio.getLatitude() + "," + locInicio.getLongitude() ,1);
         appendLog("Coordenadas finales: " + locActual.getLatitude() + "," + locActual.getLongitude() ,1);
         // ver calorias
