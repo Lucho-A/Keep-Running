@@ -29,6 +29,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import static java.lang.System.exit;
 
 public class GPSLocationService extends Service{
@@ -51,6 +53,7 @@ public class GPSLocationService extends Service{
     private static final double R_TIERRA = 6371.0;
     private static final long LOCATION_INTERVAL = 1000;
     private static final float LOCATION_DISTANCE = (float) 0.1;
+    private static final int MAX_VOLUME = 100;
     private final SimpleDateFormat timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
@@ -272,9 +275,9 @@ public class GPSLocationService extends Service{
         appendLog("Distancia Total: " + round(distanciaTotal/1000,2) + " km",1);
         appendLog("Tiempo Total: " + hours + ":" + mins + ":" + secs,1);
         appendLog("Velocidad promedio: " + getVelProm(),1);
+        appendLog("Calorías consumidas: " + getCaloriesBurned() ,1);
         appendLog("Coordenadas de origen: " + locInicio.getLatitude() + "," + locInicio.getLongitude() ,1);
         appendLog("Coordenadas finales: " + locActual.getLatitude() + "," + locActual.getLongitude() ,1);
-        // ver calorias
     }
 
     double distance_between() {
@@ -298,8 +301,15 @@ public class GPSLocationService extends Service{
         long mills = Math.abs(difTime);
         int mins = (int) (mills/(1000*60)) % 60;
         long secs = (int) (mills / 1000) % 60;
-        tts.speak(km + " kilometros, a " + mins + ", " + secs, TextToSpeech.QUEUE_FLUSH, null);
+        textoAvoz(km + " kilometros, a " + mins + ", " + secs);
         horaAnterior = horaActual;
+    }
+
+    private void textoAvoz(String msj){
+        setVolume(50);
+        tts.speak(msj, TextToSpeech.QUEUE_FLUSH, null);
+        pausa(5);
+        setVolume(MAX_VOLUME);
     }
 
     public static BigDecimal round(double d, int decimalPlace) {
@@ -369,6 +379,18 @@ public class GPSLocationService extends Service{
 
     public String getCoorMaps() { return coordMap; }
 
+    public void pausa(int sec){
+        try {
+            TimeUnit.SECONDS.sleep(sec);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void setVolume(int volume){
+        float rVolume = (float) (1 - (Math.log(MAX_VOLUME - (volume-1)) / Math.log(MAX_VOLUME)));
+        mPlayer.setVolume(rVolume, rVolume);
+    }
 
     private class LocationListener implements android.location.LocationListener {
 
@@ -385,7 +407,7 @@ public class GPSLocationService extends Service{
                     String coord=locInicio.getLatitude() + "," + locInicio.getLongitude();
                     appendLog(coord, 2);
                     coordMap = "|" + coord;
-                    tts.speak("Ubicación actual localizada...", TextToSpeech.QUEUE_FLUSH, null);
+                    textoAvoz("Ubicación actual localizada...");
                 }else{
                     contLocInicio++;
                 }
@@ -431,11 +453,11 @@ public class GPSLocationService extends Service{
         }
 
         public void onProviderDisabled(String provider) {
-            tts.speak("Sin señal GPS", TextToSpeech.QUEUE_FLUSH, null);
+            textoAvoz("Sin señal GPS");
         }
 
         public void onProviderEnabled(String provider) {
-            tts.speak("Con señal GPS", TextToSpeech.QUEUE_FLUSH, null);
+            textoAvoz("Con señal GPS");
         }
 
         public void onStatusChanged(String provider, int status, Bundle extras){
