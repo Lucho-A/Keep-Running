@@ -197,6 +197,7 @@ public class GPSLocationService extends Service{
     }
 
     public String getPuntoInicio() { return locInicio.getLatitude() + "," + locInicio.getLongitude(); }
+    public String getPuntoFin() { return locActual.getLatitude() + "," + locActual.getLongitude(); }
 
     public String getVelProm() {
         long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();

@@ -88,9 +88,12 @@ public class MainActivity extends AppCompatActivity {
                 btnComenzar.setText("Comenzar");
                 btnComenzar.setBackgroundColor(Color.parseColor("#673AB7"));
                 String puntoInicio=gpsService.getPuntoInicio();
+                String puntoFin=gpsService.getPuntoFin();
                 String url = "http://maps.google.com/maps/api/staticmap?path=color:0xff000080|weight:1" + gpsService.getCoorMaps() +
-                        "&size=200x200&markers=color:blue%7Clabel:Punto de Inicio|" + puntoInicio +"&scale=2&sensor=false&key=" + API_KEY;
-                Log.e("coord: ", gpsService.getCoorMaps());
+                        "&size=200x200" +
+                        "&markers=size:tiny%7Ccolor:blue%7C" + puntoInicio +
+                        "&markers=size:tiny%7Ccolor:red%7C" + puntoFin +
+                        "&scale=2&sensor=false&key=" + API_KEY;
                 new DownloadImageTask(findViewById(R.id.imgMap))
                         .execute(url);
                 gpsService.stopService();
