@@ -1,1 +1,6 @@
+/libs
 /build
+src/androidTest
+src/test
+build.gradle
+proguard-rules.pro

@@ -47,7 +47,6 @@ public class GPSLocationService extends Service{
     private static final double R_TIERRA = 6371.0;
     private static final long LOCATION_INTERVAL = 1000;
     private static final float LOCATION_DISTANCE = (float) 0.1;
-    private static final int MAX_VOLUME = 100;
     private final SimpleDateFormat timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
@@ -98,6 +97,7 @@ public class GPSLocationService extends Service{
         distanciaParcialMap = 0;
         log_name =timeStamp.format(Calendar.getInstance().getTime());
         appendLog("Running comenzado: " + Calendar.getInstance().getTime(),0);
+        tts.speak("Running comenzado", TextToSpeech.QUEUE_FLUSH, null);
         appendLog("Fecha/Hora;Distancia(m);Latitud;Longitud;Velocidad (GPS)",0);
         fechaHoraComienzo= Calendar.getInstance().getTime();
         horaAnterior=Calendar.getInstance().getTime();
@@ -209,7 +209,7 @@ public class GPSLocationService extends Service{
 
     public String getCaloriesBurned(){
         long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();
-        long mills = Math.abs(millse);;
+        long mills = Math.abs(millse);
         int mins = (int) (mills/(1000*60));
         double calBurn= ((43 * 0.2017) + (70 * 2.20462 * 0.09036) + (150 * 0.6309) - 55.0969) * (mins / 4.184);
         return round(calBurn,2) + " cal.";
