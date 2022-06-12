@@ -1,4 +1,4 @@
-package com.lucho.running;
+package com.lucho.keeprunning;
 
 import android.content.Context;
 
@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 public class ExampleInstrumentedTest {
     @Test
     public void useAppContext() {
-        // Context of the app under test.
+        // Context of the Keep-Running under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assertEquals("com.lucho.running", appContext.getPackageName());
     }

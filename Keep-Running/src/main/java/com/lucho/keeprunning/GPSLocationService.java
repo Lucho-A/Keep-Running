@@ -1,4 +1,4 @@
-package com.lucho.running;
+package com.lucho.keeprunning;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -10,9 +10,6 @@ import android.content.Intent;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,14 +25,11 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.System.exit;
 
 public class GPSLocationService extends Service{
-    //private static final String LOG_PATH = "/storage/B6CD-858A/Log/";
-    private static final String MUSIC_PATH = "/storage/B6CD-858A/Musica/House/HC/";
     private static final String LOG_PATH = "/storage/emulated/0/Log/";
     private static final String CHANNEL_ID = "Channel_GPSLocationService";
     private static final int NOTIFICATION_ID = 12345678;
@@ -62,8 +56,6 @@ public class GPSLocationService extends Service{
     private LocationManager mLocationManager;
     private Context mContext;
     private TextToSpeech tts;
-    private MediaPlayer mPlayer;
-    private AudioManager mAudioManager;
     private Date fechaHoraComienzo;
     private Date fechaHoraFin;
     private Date horaAnterior;
@@ -88,7 +80,6 @@ public class GPSLocationService extends Service{
     public void onCreate() {
         mContext=this;
         tts =new TextToSpeech(getApplicationContext(), status -> tts.setLanguage(new Locale("es","LA")));
-        mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -108,7 +99,6 @@ public class GPSLocationService extends Service{
         log_name =timeStamp.format(Calendar.getInstance().getTime());
         appendLog("Running comenzado: " + Calendar.getInstance().getTime(),0);
         appendLog("Fecha/Hora;Distancia(m);Latitud;Longitud;Velocidad (GPS)",0);
-        play();
         fechaHoraComienzo= Calendar.getInstance().getTime();
         horaAnterior=Calendar.getInstance().getTime();
         startListening();
@@ -122,11 +112,6 @@ public class GPSLocationService extends Service{
             } catch (Exception ex) {
                 appendLog(timeStamp.format(Calendar.getInstance().getTime()) + "Error al remover Location Listener - onDestroy()",-1);
             }
-        }
-        if(mPlayer!=null) {
-            mPlayer.stop();
-            mPlayer.release();
-            mPlayer=null;
         }
         fechaHoraFin=Calendar.getInstance().getTime();
         appendLog("Running finalizado: " + Calendar.getInstance().getTime(),0);
@@ -222,41 +207,6 @@ public class GPSLocationService extends Service{
         }
     }
 
-    private Uri proxTema(){
-        File file = new File(MUSIC_PATH + getRandomFile());
-        return Uri.fromFile(file);
-    }
-
-    protected void play() {
-        mPlayer = MediaPlayer.create(this, proxTema());
-        mPlayer.setLooping(false);
-        mPlayer.start();
-        mPlayer.setOnCompletionListener(mediaPlayer -> {
-            mediaPlayer.reset();
-            try {
-                mediaPlayer.setDataSource(mContext, proxTema());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                mediaPlayer.prepareAsync();
-            } catch (IllegalStateException e) {
-                e.printStackTrace();
-            }
-            mediaPlayer.setOnPreparedListener(MediaPlayer::start);
-        });
-    }
-
-    private String getRandomFile() {
-        File dir = new File(MUSIC_PATH);
-        String[] files = dir.list();
-        Random rand = new Random();
-        if(files!=null) {
-            int random_index = rand.nextInt(files.length);
-            return (files[random_index]);
-        }
-        return "";
-    }
     public String getCaloriesBurned(){
         long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();
         long mills = Math.abs(millse);;
@@ -307,10 +257,8 @@ public class GPSLocationService extends Service{
     }
 
     private void textoAvoz(String msj){
-        setVolume(50);
         tts.speak(msj, TextToSpeech.QUEUE_FLUSH, null);
         pausa(5);
-        setVolume(MAX_VOLUME);
     }
 
     public static BigDecimal round(double d, int decimalPlace) {
@@ -388,11 +336,6 @@ public class GPSLocationService extends Service{
         }
     }
 
-    private void setVolume(int volume){
-        float rVolume = (float) (1 - (Math.log(MAX_VOLUME - (volume-1)) / Math.log(MAX_VOLUME)));
-        mPlayer.setVolume(rVolume, rVolume);
-    }
-
     private class LocationListener implements android.location.LocationListener {
 
         public LocationListener() {
@@ -401,7 +344,6 @@ public class GPSLocationService extends Service{
         public void onLocationChanged(Location location) {
             locActual = location;
             double distanciaEntreLoc = distance_between();
-            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
             if(locInicio.getLatitude()==0) {
                 if(contLocInicio==LIMIT_INT_UBI_INICIAL) {
                     locInicio = location;

@@ -1,4 +1,4 @@
-package com.lucho.running;
+package com.lucho.keeprunning;
 
 import org.junit.Test;
 

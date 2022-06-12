@@ -1,4 +1,4 @@
-package com.lucho.running;
+package com.lucho.keeprunning;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
