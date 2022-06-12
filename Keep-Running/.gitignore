@@ -4,16 +4,12 @@
 /gradle
 /captures
 /local.properties
-build.gradle
-gradle*
-settings.gradle
 *.iml
 .DS_Store
 local.properties
 .externalNativeBuild
 .cxx
 /libs
-/build
 build.gradle
 proguard-rules.pro
 /src/androidTest/
