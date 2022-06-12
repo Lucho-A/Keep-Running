@@ -1,0 +1,3 @@
+rootProject.name = "Keep-Running"
+include ':app'
+include ':keep-running'
