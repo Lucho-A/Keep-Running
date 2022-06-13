@@ -23,20 +23,22 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_CODE_ASK_PERMISSIONS = 1;
-    private static final String[] REQUIRED_SDK_PERMISSIONS = new String[] {
-            Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE };
+    private static final String[] REQUIRED_SDK_PERMISSIONS = new String[]{
+            Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     private static final String API_KEY = "AIzaSyDOV_bXWDPpAEYPjYs6bL0UowQe1TAflMg";
     private GPSLocationService gpsService;
+    private KeepRunning kr;
     private Button btnComenzar;
+    private Button btnSalir;
     private TextView txtFecha;
     private TextView txtHoraInicio;
     private TextView txtHoraFin;
@@ -45,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtVelProm;
     private TextView txtCalConsum;
     private ImageView imgMap;
-    private Boolean isRunning;
+    private Boolean isRunning=false;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,14 +55,14 @@ public class MainActivity extends AppCompatActivity {
         final Intent intent = new Intent(this.getApplication(), GPSLocationService.class);
         this.getApplication().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         checkPermissions();
-        imgMap=findViewById(R.id.imgMap);
-        txtFecha=findViewById(R.id.txtFecha);
-        txtHoraInicio=findViewById(R.id.txtHoraInicio);
-        txtHoraFin=findViewById(R.id.txtHoraFin);
-        txtDistanciaTotal=findViewById(R.id.txtDistanciaTotal);
-        txtTiempoTotal=findViewById(R.id.txtTiempoTotal);
-        txtVelProm=findViewById(R.id.txtVelProm);
-        txtCalConsum=findViewById(R.id.txtCaloriasConsum);
+        imgMap = findViewById(R.id.imgMap);
+        txtFecha = findViewById(R.id.txtFecha);
+        txtHoraInicio = findViewById(R.id.txtHoraInicio);
+        txtHoraFin = findViewById(R.id.txtHoraFin);
+        txtDistanciaTotal = findViewById(R.id.txtDistanciaTotal);
+        txtTiempoTotal = findViewById(R.id.txtTiempoTotal);
+        txtVelProm = findViewById(R.id.txtVelProm);
+        txtCalConsum = findViewById(R.id.txtCaloriasConsum);
         txtFecha.setVisibility(View.GONE);
         txtHoraFin.setVisibility(View.GONE);
         txtHoraInicio.setVisibility(View.GONE);
@@ -69,10 +71,19 @@ public class MainActivity extends AppCompatActivity {
         txtVelProm.setVisibility(View.GONE);
         txtCalConsum.setVisibility(View.GONE);
         imgMap.setVisibility(View.GONE);
-        isRunning=false;
-        btnComenzar= findViewById(R.id.btnComenzar);
+        startService(intent);
+        btnSalir = findViewById(R.id.btnSalir);
+        btnSalir.setText("Salir");
+        btnSalir.setEnabled(true);
+        btnSalir.setBackgroundColor(Color.parseColor("#FF0000"));
+        btnComenzar = findViewById(R.id.btnComenzar);
+        btnComenzar.setText("Esperando ubicación");
+        btnComenzar.setEnabled(false);
+        btnComenzar.setBackgroundColor(Color.parseColor("#A4A7AB"));
+        Timer timer = new Timer();
+        timer.schedule(timerTask, 0, 1000);
         btnComenzar.setOnClickListener(v -> {
-            if(!isRunning) {
+            if (!isRunning) {
                 btnComenzar.setText("Detener");
                 btnComenzar.setBackgroundColor(Color.parseColor("#FF0000"));
                 txtFecha.setVisibility(View.GONE);
@@ -83,20 +94,20 @@ public class MainActivity extends AppCompatActivity {
                 txtVelProm.setVisibility(View.GONE);
                 txtCalConsum.setVisibility(View.GONE);
                 imgMap.setVisibility(View.GONE);
+                btnSalir.setBackgroundColor(Color.parseColor("#A4A7AB"));
+                btnSalir.setEnabled(false);
+                kr.iniciar_carrera();
                 gpsService.onStartCommand(intent, 0, 0);
-            }else{
+            } else {
                 btnComenzar.setText("Comenzar");
                 btnComenzar.setBackgroundColor(Color.parseColor("#673AB7"));
-                String puntoInicio=gpsService.getPuntoInicio();
-                String puntoFin=gpsService.getPuntoFin();
-                String url = "http://maps.google.com/maps/api/staticmap?path=color:0xff000080|weight:1" + gpsService.getCoorMaps() +
+                kr.finalizar_carrera();
+                String url = "http://maps.google.com/maps/api/staticmap?path=color:0xff000080|weight:1" + kr.getCoorMaps() +
                         "&size=200x200" +
-                        "&markers=size:tiny%7Ccolor:blue%7C" + puntoInicio +
-                        "&markers=size:tiny%7Ccolor:red%7C" + puntoFin +
+                        "&markers=size:tiny%7Ccolor:blue%7C" + kr.getPuntoInicio() +
+                        "&markers=size:tiny%7Ccolor:red%7C" + kr.getPuntoFin() +
                         "&scale=2&sensor=false&key=" + API_KEY;
-                new DownloadImageTask(findViewById(R.id.imgMap))
-                        .execute(url);
-                gpsService.stopService();
+                new DownloadImageTask(findViewById(R.id.imgMap)).execute(url);
                 imgMap.setVisibility(View.VISIBLE);
                 txtFecha.setVisibility(View.VISIBLE);
                 txtHoraFin.setVisibility(View.VISIBLE);
@@ -105,15 +116,23 @@ public class MainActivity extends AppCompatActivity {
                 txtTiempoTotal.setVisibility(View.VISIBLE);
                 txtVelProm.setVisibility(View.VISIBLE);
                 txtCalConsum.setVisibility(View.VISIBLE);
-                txtFecha.setText("Fecha: " + gpsService.getFechaComienzo());
-                txtHoraInicio.setText("Hora Inicio: " + gpsService.getHoraComienzo());
-                txtHoraFin.setText("Hora Fin: " + gpsService.getHoraFin());
-                txtDistanciaTotal.setText("Distancia Total: " + gpsService.round(gpsService.getDistanciaTotalKM(),2) + " km");
-                txtTiempoTotal.setText("Tiempo Total: " + gpsService.getTiempoTotal());
-                txtVelProm.setText("Vel. Prom: " + gpsService.getVelProm());
-                txtCalConsum.setText("Calorías Consum.: " + gpsService.getCaloriesBurned());
+                txtFecha.setText("Fecha: " + kr.getFechaComienzo());
+                txtHoraInicio.setText("Hora Inicio: " + kr.getHoraComienzo());
+                txtHoraFin.setText("Hora Fin: " + kr.getHoraFin());
+                txtDistanciaTotal.setText("Distancia Total: " + kr.round(kr.getDistanciaTotalKM(), 2) + " km");
+                txtTiempoTotal.setText("Tiempo Total: " + kr.getTiempoTotal());
+                txtVelProm.setText("Vel. Prom: " + kr.getVelProm());
+                txtCalConsum.setText("Calorías Consum.: " + kr.getCaloriesBurned());
+                btnSalir.setEnabled(true);
+                btnSalir.setBackgroundColor(Color.parseColor("#FF0000"));
             }
-            isRunning=!isRunning;
+            isRunning = !isRunning;
+        });
+        btnSalir.setOnClickListener(v -> {
+            gpsService.stopService();
+            Intent intentSalir = new Intent(Intent.ACTION_MAIN);
+            intentSalir.addCategory(Intent.CATEGORY_HOME);
+            startActivity(intentSalir);
         });
     }
 
@@ -132,7 +151,6 @@ public class MainActivity extends AppCompatActivity {
                 mIcon11 = BitmapFactory.decodeStream(in);
             } catch (Exception e) {
                 Log.e("Error", e.getMessage());
-                e.printStackTrace();
             }
             return mIcon11;
         }
@@ -154,6 +172,23 @@ public class MainActivity extends AppCompatActivity {
             if (className.getClassName().equals("BackgroundService")) {
                 gpsService = null;
             }
+        }
+    };
+
+    TimerTask timerTask = new TimerTask() {
+        @Override
+        public void run() {
+            runOnUiThread(() -> {
+                if (gpsService != null) {
+                    if (gpsService.getReady()) {
+                        btnComenzar.setText("Comenzar");
+                        btnComenzar.setBackgroundColor(Color.parseColor("#673AB7"));
+                        btnComenzar.setEnabled(true);
+                        kr=new KeepRunning(gpsService, getApplicationContext());
+                        timerTask.cancel();
+                    }
+                }
+            });
         }
     };
 
