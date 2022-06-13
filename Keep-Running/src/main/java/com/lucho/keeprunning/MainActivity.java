@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
@@ -23,6 +24,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,8 +34,7 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_CODE_ASK_PERMISSIONS = 1;
-    private static final String[] REQUIRED_SDK_PERMISSIONS = new String[]{
-            Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    private static final String[] REQUIRED_SDK_PERMISSIONS = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     private static final String API_KEY = "AIzaSyDOV_bXWDPpAEYPjYs6bL0UowQe1TAflMg";
     private GPSLocationService gpsService;
     private KeepRunning kr;
@@ -47,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtVelProm;
     private TextView txtCalConsum;
     private ImageView imgMap;
-    private Boolean isRunning=false;
+    private Boolean isRunning = false;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         final Intent intent = new Intent(this.getApplication(), GPSLocationService.class);
         this.getApplication().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         checkPermissions();
+        startService(intent);
         imgMap = findViewById(R.id.imgMap);
         txtFecha = findViewById(R.id.txtFecha);
         txtHoraInicio = findViewById(R.id.txtHoraInicio);
@@ -71,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
         txtVelProm.setVisibility(View.GONE);
         txtCalConsum.setVisibility(View.GONE);
         imgMap.setVisibility(View.GONE);
-        startService(intent);
         btnSalir = findViewById(R.id.btnSalir);
         btnSalir.setText("Salir");
         btnSalir.setEnabled(true);
@@ -119,10 +120,10 @@ public class MainActivity extends AppCompatActivity {
                 txtFecha.setText("Fecha: " + kr.getFechaComienzo());
                 txtHoraInicio.setText("Hora Inicio: " + kr.getHoraComienzo());
                 txtHoraFin.setText("Hora Fin: " + kr.getHoraFin());
-                txtDistanciaTotal.setText("Distancia Total: " + kr.round(kr.getDistanciaTotalKM(), 2) + " km");
-                txtTiempoTotal.setText("Tiempo Total: " + kr.getTiempoTotal());
-                txtVelProm.setText("Vel. Prom: " + kr.getVelProm());
-                txtCalConsum.setText("Calorías Consum.: " + kr.getCaloriesBurned());
+                txtDistanciaTotal.setText("Distancia Total: " + kr.round(kr.distancia_total_KM(), 2) + " km");
+                txtTiempoTotal.setText("Tiempo Total: " + kr.tiempo_total());
+                txtVelProm.setText("Vel. Prom: " + kr.velocidad_promedio());
+                txtCalConsum.setText("Calorías Consum.: " + kr.calorias_consumidas());
                 btnSalir.setEnabled(true);
                 btnSalir.setBackgroundColor(Color.parseColor("#FF0000"));
             }
@@ -163,15 +164,12 @@ public class MainActivity extends AppCompatActivity {
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             String name = className.getClassName();
-            if (name.endsWith("GPSLocationService")) {
+            if (name.endsWith("GPSLocationService"))
                 gpsService = ((GPSLocationService.LocationServiceBinder) service).getService();
-            }
         }
 
         public void onServiceDisconnected(ComponentName className) {
-            if (className.getClassName().equals("BackgroundService")) {
-                gpsService = null;
-            }
+            if (className.getClassName().equals("BackgroundService")) gpsService = null;
         }
     };
 
@@ -184,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
                         btnComenzar.setText("Comenzar");
                         btnComenzar.setBackgroundColor(Color.parseColor("#673AB7"));
                         btnComenzar.setEnabled(true);
-                        kr=new KeepRunning(gpsService, getApplicationContext());
+                        kr = new KeepRunning(gpsService, getApplicationContext());
                         timerTask.cancel();
                     }
                 }
@@ -204,37 +202,29 @@ public class MainActivity extends AppCompatActivity {
         final List<String> missingPermissions = new ArrayList<String>();
         for (final String permission : REQUIRED_SDK_PERMISSIONS) {
             final int result = ContextCompat.checkSelfPermission(this, permission);
-            if (result != PackageManager.PERMISSION_GRANTED) {
-                missingPermissions.add(permission);
-            }
+            if (result != PackageManager.PERMISSION_GRANTED) missingPermissions.add(permission);
         }
         if (!missingPermissions.isEmpty()) {
-            final String[] permissions = missingPermissions
-                    .toArray(new String[missingPermissions.size()]);
+            final String[] permissions = missingPermissions.toArray(new String[missingPermissions.size()]);
             ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_ASK_PERMISSIONS);
         } else {
             final int[] grantResults = new int[REQUIRED_SDK_PERMISSIONS.length];
             Arrays.fill(grantResults, PackageManager.PERMISSION_GRANTED);
-            onRequestPermissionsResult(REQUEST_CODE_ASK_PERMISSIONS, REQUIRED_SDK_PERMISSIONS,
-                    grantResults);
+            onRequestPermissionsResult(REQUEST_CODE_ASK_PERMISSIONS, REQUIRED_SDK_PERMISSIONS, grantResults);
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[],
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case REQUEST_CODE_ASK_PERMISSIONS:
-                for (int index = permissions.length - 1; index >= 0; --index) {
-                    if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
-                        Toast.makeText(this, "Required permission '" + permissions[index]
-                                + "' not granted, exiting", Toast.LENGTH_LONG).show();
-                        finish();
-                        return;
-                    }
+        if (requestCode==REQUEST_CODE_ASK_PERMISSIONS) {
+            for (int index = permissions.length - 1; index >= 0; --index) {
+                if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Required permission '" + permissions[index] + "' not granted, exiting", Toast.LENGTH_LONG).show();
+                    finish();
+                    return;
                 }
-                break;
+            }
         }
     }
 }
