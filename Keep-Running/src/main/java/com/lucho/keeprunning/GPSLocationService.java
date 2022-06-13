@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
-import android.widget.Toast;
 import java.util.Locale;
 
 import static java.lang.System.exit;
@@ -111,10 +110,10 @@ public class GPSLocationService extends Service {
 
     private void isLocationEnabled() {
         if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.e("isLocationEnabled: ", "No hay GPS");
-            exit(0);
+            textoAvoz("Sin servicio de localización.");
+            Log.e("isLocationEnabled: ", "false");
         } else {
-            Toast.makeText(mContext, "GPS activo", Toast.LENGTH_LONG).show();
+            textoAvoz("Servicio de localización activado");
         }
     }
 
@@ -170,11 +169,11 @@ public class GPSLocationService extends Service {
         }
 
         public void onProviderDisabled(String provider) {
-            textoAvoz("Sin señal GPS");
+            textoAvoz("Se perdió la señal GPS");
         }
 
         public void onProviderEnabled(String provider) {
-            textoAvoz("Con señal GPS");
+            textoAvoz("Señal GPS encontrada");
         }
 
         public void onStatusChanged(String provider, int status, Bundle extras) {

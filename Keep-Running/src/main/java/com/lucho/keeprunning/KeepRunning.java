@@ -16,9 +16,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class KeepRunning extends AppCompatActivity {
-    private static final double VEL_PROM = 2.84561118987206; // ajustado de acuerdo a carrera 20210531
-    private static final double DIST_PROM = 3.49850390902629; // ajustado de acuerdo a carrera 20210531
-    private static final double DESVIO_DELTA = 1.3; // OK de acuerdo a la carrera del 20210531
+    private static final double VEL_PROM = 2.84561118987206;
+    private static final double DIST_PROM = 3.49850390902629;
+    private static final double DESVIO_DELTA = 1.3;
     private static final double LIMIT_VEL_MAX = VEL_PROM + DESVIO_DELTA;
     private static final double LIMIT_VEL_MIN = VEL_PROM - DESVIO_DELTA;
     private static final double LIMIT_DIST_MAX = DIST_PROM + DESVIO_DELTA;
@@ -35,6 +35,7 @@ public class KeepRunning extends AppCompatActivity {
     private Date horaAnterior;
     private String coordMap;
     private double distanciaTotal = 0.0;
+    private double distanciaParcial=0.0;
     private Location locInicio;
     private Location locActual;
     private Location locAnterior;
@@ -52,16 +53,16 @@ public class KeepRunning extends AppCompatActivity {
     }
 
     public void iniciar_carrera(){
-        this.fechaHoraComienzo = Calendar.getInstance().getTime();
+        fechaHoraComienzo = Calendar.getInstance().getTime();
         textoAvoz("Running iniciado");
-        gpsService.actualizarNotification("Running iniciado.", "Distancia parcial: " + round(getDistanciaTotalKM(), 2) + " km");
+        gpsService.actualizarNotification("Running iniciado...", "Distancia parcial: " + round(getDistanciaTotalKM(), 2) + " km");
         isRunning=true;
     }
 
     public void finalizar_carrera() {
         fechaHoraFin = Calendar.getInstance().getTime();
         textoAvoz("Running finalizado");
-        gpsService.actualizarNotification("Running finalizado.", "Distancia Total: " + round(getDistanciaTotalKM(), 2) + " km");
+        gpsService.actualizarNotification("Running finalizado", "Distancia Total: " + round(getDistanciaTotalKM(), 2) + " km");
         isFirstLocation = true;
         isRunning=false;
     }
@@ -161,14 +162,13 @@ public class KeepRunning extends AppCompatActivity {
                         locInicio = locActual;
                         locAnterior = locActual;
                         kmsParciales = 0;
-                        fechaHoraComienzo = Calendar.getInstance().getTime();
+                        distanciaParcial=0.0;
                         horaAnterior = Calendar.getInstance().getTime();
                         isFirstLocation = false;
                         String coord = locInicio.getLatitude() + "," + locInicio.getLongitude();
                         coordMap = "|" + coord;
                     } else {
                         double distanciaEntreLoc;
-                        double distanciaParcial = 0.0;
                         double distanciaParcialMap = 0.0;
                         distanciaEntreLoc = distance_between();
                         if (distanciaEntreLoc < LIMIT_DIST_MAX &&
@@ -182,12 +182,13 @@ public class KeepRunning extends AppCompatActivity {
                             distanciaParcialMap += distanciaEntreLoc;
                             if (distanciaParcial > LIMIT_DIST_PAR) {
                                 kmsParciales++;
+                                distanciaParcial=0.0;
                                 tiempoPorKM(kmsParciales);
                             }
                             if (distanciaParcialMap > LIMIT_DIST_MAP) {
                                 String coord = locActual.getLatitude() + "," + locActual.getLongitude();
                                 coordMap = coordMap + "|" + coord;
-                                gpsService.actualizarNotification("Running iniciado.", "Distancia parcial: " + round(getDistanciaTotalKM(), 2) + " km");
+                                gpsService.actualizarNotification("Running iniciado...", "Distancia parcial: " + round(getDistanciaTotalKM(), 2) + " km");
                             }
                         }
                         locAnterior = locActual;
