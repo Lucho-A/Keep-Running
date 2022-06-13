@@ -25,11 +25,14 @@ public class KeepRunning extends AppCompatActivity {
     private static final double LIMIT_DIST_MIN = DIST_PROM - DESVIO_DELTA;
     private static final int LIMIT_MIN_SAT = 3;
     private static final int LIMIT_DIST_PAR = 1000;
+    private static final int LIMIT_DIST_MAP = 50;
     private static final double R_TIERRA = 6371.0;
+    private final SimpleDateFormat timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
     private final GPSLocationService gpsService;
     private TextToSpeech tts;
+    private String id;
     private Date fechaHoraComienzo;
     private Date fechaHoraFin;
     private Date horaAnterior;
@@ -37,36 +40,42 @@ public class KeepRunning extends AppCompatActivity {
     private double distanciaTotal = 0.0;
     private double distanciaParcial = 0.0;
     private double distanciaParcialMap = 0.0;
+    private int kmsParciales=0;
     private Location locInicio;
     private Location locActual;
     private Location locAnterior;
-    private static final int LIMIT_DIST_MAP = 50;
-    private int kmsParciales=0;
     private Boolean isFirstLocation;
     private Boolean isRunning = false;
 
     public KeepRunning(GPSLocationService gpsService, Context applicationContext) {
         this.gpsService = gpsService;
         tts = new TextToSpeech(applicationContext, status -> tts.setLanguage(new Locale("es", "LA")));
-        isFirstLocation = true;
         Timer timer = new Timer();
         timer.schedule(timerTask, 0, 1000);
     }
 
     public void iniciar_carrera() {
+        id=timeStamp.format(Calendar.getInstance().getTime());
         fechaHoraComienzo = Calendar.getInstance().getTime();
         texto_a_voz("Running iniciado");
-        gpsService.actualizar_notification("Running iniciado...", "Distancia parcial: " + round(distancia_total_KM(), 2) + " km");
+        distanciaTotal = 0.0;
+        kmsParciales = 0;
+        distanciaParcial = 0.0;
+        distanciaParcialMap = 0.0;
+        isFirstLocation = true;
         isRunning = true;
+        gpsService.actualizar_notification("Running iniciado...", "Distancia parcial: " + round(distancia_total_KM(), 2) + " km");
     }
 
     public void finalizar_carrera() {
         fechaHoraFin = Calendar.getInstance().getTime();
         texto_a_voz("Running finalizado");
-        gpsService.actualizar_notification("Running finalizado", "Distancia Total: " + round(distancia_total_KM(), 2) + " km");
         isFirstLocation = true;
         isRunning = false;
+        gpsService.actualizar_notification("Running finalizado", "Distancia Total: " + round(distancia_total_KM(), 2) + " km");
     }
+
+    public String getId() { return id;}
 
     public String getFechaComienzo() {
         return dateFormat.format(fechaHoraComienzo);
@@ -120,7 +129,7 @@ public class KeepRunning extends AppCompatActivity {
         long mills = Math.abs(millse);
         int mins = (int) (mills / (1000 * 60));
         double calBurn = ((43 * 0.2017) + (70 * 2.20462 * 0.09036) + (150 * 0.6309) - 55.0969) * (mins / 4.184);
-        return round(calBurn, 2) + " cal.";
+        return round(calBurn, 2) + "";
     }
 
     double distance_between() {
@@ -151,7 +160,7 @@ public class KeepRunning extends AppCompatActivity {
         long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();
         long mills = Math.abs(millse);
         double velProm = mills / distancia_total_KM();
-        return (int) (velProm / (1000 * 60)) % 60 + "'" + (int) (velProm / 1000) % 60 + "'' min/km";
+        return (int) (velProm / (1000 * 60)) % 60 + "'" + (int) (velProm / 1000) % 60;
     }
 
     TimerTask timerTask = new TimerTask() {
@@ -163,9 +172,6 @@ public class KeepRunning extends AppCompatActivity {
                     if (isFirstLocation) {
                         locInicio = locActual;
                         locAnterior = locActual;
-                        kmsParciales = 0;
-                        distanciaParcial = 0.0;
-                        distanciaParcialMap = 0.0;
                         horaAnterior = Calendar.getInstance().getTime();
                         coordMap = "|" + locInicio.getLatitude() + "," + locInicio.getLongitude();
                         isFirstLocation = false;

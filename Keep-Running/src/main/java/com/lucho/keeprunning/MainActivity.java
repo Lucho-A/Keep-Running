@@ -122,8 +122,9 @@ public class MainActivity extends AppCompatActivity {
                 txtHoraFin.setText("Hora Fin: " + kr.getHoraFin());
                 txtDistanciaTotal.setText("Distancia Total: " + kr.round(kr.distancia_total_KM(), 2) + " km");
                 txtTiempoTotal.setText("Tiempo Total: " + kr.tiempo_total());
-                txtVelProm.setText("Vel. Prom: " + kr.velocidad_promedio());
-                txtCalConsum.setText("Calorías Consum.: " + kr.calorias_consumidas());
+                txtVelProm.setText("Vel. Prom: " + kr.velocidad_promedio() + "'' min/km");
+                txtCalConsum.setText("Calorías Consum.: " + kr.calorias_consumidas() + " cal.");
+                new Logging().appendLog(kr);
                 btnSalir.setEnabled(true);
                 btnSalir.setBackgroundColor(Color.parseColor("#FF0000"));
             }
