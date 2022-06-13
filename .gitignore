@@ -1,36 +1,6 @@
-# Java class files
-*.class
-# generated files
-bin/
-gen/
-# Ignore Gradle files
 .gradle/
-build/
-# configuration
-.iws
-.ipr
-.iml
+.idea/
+gradle/
+gradle.*
 local.properties
-# built generated package files
-*.apk
-*.ap_
-# the Dalvik VM files
-*.dex
-# log files
-*.log
-# keys
-*.jks
-# Android Studio / IntelliJ IDEA
-*.iws
-.idea/libraries
-.idea/tasks.xml
-.idea/vcs.xml
-.idea/workspace.xml
-/out/
-# OS specific files
-# OS temparory files
-.DS_Store
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+settings.gradle
