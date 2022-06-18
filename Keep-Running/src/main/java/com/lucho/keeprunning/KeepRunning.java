@@ -46,10 +46,11 @@ public class KeepRunning extends AppCompatActivity {
     private Location locAnterior;
     private Boolean isFirstLocation;
     private Boolean isRunning = false;
+    private TextToVoice ttv;
 
     public KeepRunning(GPSLocationService gpsService, Context applicationContext) {
         this.gpsService = gpsService;
-        tts = new TextToSpeech(applicationContext, status -> tts.setLanguage(new Locale("es", "LA")));
+        ttv=new TextToVoice(applicationContext);
         Timer timer = new Timer();
         timer.schedule(timerTask, 0, 1000);
     }
@@ -57,7 +58,7 @@ public class KeepRunning extends AppCompatActivity {
     public void iniciar_carrera() {
         id=timeStamp.format(Calendar.getInstance().getTime());
         fechaHoraComienzo = Calendar.getInstance().getTime();
-        texto_a_voz("Running iniciado");
+        ttv.text_to_voice("Running iniciado");
         distanciaTotal = 0.0;
         kmsParciales = 0;
         distanciaParcial = 0.0;
@@ -69,7 +70,7 @@ public class KeepRunning extends AppCompatActivity {
 
     public void finalizar_carrera() {
         fechaHoraFin = Calendar.getInstance().getTime();
-        texto_a_voz("Running finalizado");
+        ttv.text_to_voice("Running finalizado");
         isFirstLocation = true;
         isRunning = false;
         gpsService.actualizar_notification("Running finalizado", "Distancia Total: " + round(distancia_total_KM(), 2) + " km");
@@ -152,7 +153,7 @@ public class KeepRunning extends AppCompatActivity {
         long mills = Math.abs(difTime);
         int mins = (int) (mills / (1000 * 60)) % 60;
         long secs = (int) (mills / 1000) % 60;
-        texto_a_voz(km + " kilometros, a " + mins + ", " + secs);
+        ttv.text_to_voice(km + " kilometros, a " + mins + ", " + secs);
         horaAnterior = horaActual;
     }
 
@@ -203,8 +204,4 @@ public class KeepRunning extends AppCompatActivity {
             });
         }
     };
-
-    private void texto_a_voz(String msj) {
-        tts.speak(msj, TextToSpeech.QUEUE_FLUSH, null);
-    }
 }

@@ -165,8 +165,7 @@ public class MainActivity extends AppCompatActivity {
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             String name = className.getClassName();
-            if (name.endsWith("GPSLocationService"))
-                gpsService = ((GPSLocationService.LocationServiceBinder) service).getService();
+            if (name.endsWith("GPSLocationService")) gpsService = ((GPSLocationService.LocationServiceBinder) service).getService();
         }
 
         public void onServiceDisconnected(ComponentName className) {

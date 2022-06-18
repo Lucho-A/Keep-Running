@@ -15,9 +15,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.speech.tts.TextToSpeech;
 import android.util.Log;
-import java.util.Locale;
 
 import static java.lang.System.exit;
 
@@ -36,7 +34,7 @@ public class GPSLocationService extends Service {
     private Boolean isReady;
     private Notification.Builder builder;
     private NotificationManager notificationManager;
-    private TextToSpeech tts;
+    private TextToVoice ttv;
 
     public IBinder onBind(Intent intent) {
         return binder;
@@ -46,7 +44,7 @@ public class GPSLocationService extends Service {
         mContext = this;
         initializeLocationManager();
         startForeground(NOTIFICATION_ID, crear_notification());
-        tts = new TextToSpeech(mContext, status -> tts.setLanguage(new Locale("es", "LA")));
+        ttv=new TextToVoice(this);
         actualizar_notification("Esperando ubicación...", "");
         isReady = false;
     }
@@ -110,10 +108,10 @@ public class GPSLocationService extends Service {
 
     private void isLocationEnabled() {
         if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            texto_a_voz("Sin servicio de localización.");
+            ttv.text_to_voice("Sin servicio de localización.");
             Log.e("isLocationEnabled: ", "false");
         } else {
-            texto_a_voz("Servicio de localización activado");
+            ttv.text_to_voice("Servicio de localización activado");
         }
     }
 
@@ -135,20 +133,16 @@ public class GPSLocationService extends Service {
             if (!isReady) {
                 contLocInicio++;
                 if (contLocInicio == LIMIT_INT_UBI_INICIAL){
-                    texto_a_voz("Ubicación localizada");
+                    ttv.text_to_voice("Ubicación localizada");
                     actualizar_notification("Listo", "");
                     isReady = true;
                 }
             }
         }
 
-        public void onProviderDisabled(String provider) {
-            texto_a_voz("Se perdió la señal GPS");
-        }
+        public void onProviderDisabled(String provider) { ttv.text_to_voice("Se perdió la señal GPS");}
 
-        public void onProviderEnabled(String provider) {
-            texto_a_voz("Señal GPS encontrada");
-        }
+        public void onProviderEnabled(String provider) { ttv.text_to_voice("Señal GPS encontrada");}
 
         public void onStatusChanged(String provider, int status, Bundle extras) {
         }
@@ -178,9 +172,5 @@ public class GPSLocationService extends Service {
         builder.setContentTitle(title);
         builder.setContentText(body);
         notificationManager.notify(NOTIFICATION_ID, builder.build());
-    }
-
-    private void texto_a_voz(String msj) {
-        tts.speak(msj, TextToSpeech.QUEUE_FLUSH, null);
     }
 }
