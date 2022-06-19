@@ -29,7 +29,6 @@ public class GPSLocationService extends Service {
     private LocationListener mLocationListener;
     private LocationManager mLocationManager;
     private Location currentLocation;
-    private Context mContext;
     private int contLocInicio;
     private Boolean isReady;
     private Notification.Builder builder;
@@ -41,7 +40,6 @@ public class GPSLocationService extends Service {
     }
 
     public void onCreate() {
-        mContext = this;
         initializeLocationManager();
         startForeground(NOTIFICATION_ID, crear_notification());
         ttv=new TextToVoice(this);
@@ -74,7 +72,7 @@ public class GPSLocationService extends Service {
 
     private void initializeLocationManager() {
         if (mLocationManager == null) {
-            mLocationManager = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
+            mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
             Criteria criteria = new Criteria();
             criteria.setAccuracy(Criteria.ACCURACY_FINE);
@@ -101,9 +99,7 @@ public class GPSLocationService extends Service {
     }
 
     public class LocationServiceBinder extends Binder {
-        public GPSLocationService getService() {
-            return GPSLocationService.this;
-        }
+        public GPSLocationService getService() {return GPSLocationService.this;}
     }
 
     private void isLocationEnabled() {
@@ -144,8 +140,7 @@ public class GPSLocationService extends Service {
 
         public void onProviderEnabled(String provider) { ttv.text_to_voice("Señal GPS encontrada");}
 
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-        }
+        public void onStatusChanged(String provider, int status, Bundle extras) {}
     }
 
     private Notification crear_notification() {

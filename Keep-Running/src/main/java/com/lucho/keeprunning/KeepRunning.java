@@ -2,10 +2,7 @@ package com.lucho.keeprunning;
 
 import android.content.Context;
 import android.location.Location;
-import android.speech.tts.TextToSpeech;
-
 import androidx.appcompat.app.AppCompatActivity;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
@@ -26,12 +23,11 @@ public class KeepRunning extends AppCompatActivity {
     private static final int LIMIT_MIN_SAT = 3;
     private static final int LIMIT_DIST_PAR = 1000;
     private static final int LIMIT_DIST_MAP = 50;
-    private static final double R_TIERRA = 6371.0;
+    private static final double R_TIERRA = 6371.0088;
     private final SimpleDateFormat timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
     private final GPSLocationService gpsService;
-    private TextToSpeech tts;
     private String id;
     private Date fechaHoraComienzo;
     private Date fechaHoraFin;
@@ -46,7 +42,7 @@ public class KeepRunning extends AppCompatActivity {
     private Location locAnterior;
     private Boolean isFirstLocation;
     private Boolean isRunning = false;
-    private TextToVoice ttv;
+    private final TextToVoice ttv;
 
     public KeepRunning(GPSLocationService gpsService, Context applicationContext) {
         this.gpsService = gpsService;
@@ -93,28 +89,18 @@ public class KeepRunning extends AppCompatActivity {
     public String getCoorMaps() {return coordMap;}
 
     public String getPuntoInicio() {
-        if (locInicio != null) {
-            return locInicio.getLatitude() + "," + locInicio.getLongitude();
-        } else {
-            return "";
-        }
+        if (locInicio != null) return locInicio.getLatitude() + "," + locInicio.getLongitude();
+        return "";
     }
 
     public String getPuntoFin() {
-        if (locActual != null) {
-            return locActual.getLatitude() + "," + locActual.getLongitude();
-        } else {
-            return "";
-        }
+        if (locActual != null) return locActual.getLatitude() + "," + locActual.getLongitude();
+        return "";
     }
 
-    public static BigDecimal round(double d, int decimalPlace) {
-        return new BigDecimal(String.valueOf(d)).setScale(decimalPlace, RoundingMode.HALF_UP);
-    }
+    public static BigDecimal round(double d, int decimalPlace){ return new BigDecimal(String.valueOf(d)).setScale(decimalPlace, RoundingMode.HALF_UP);}
 
-    public double distancia_total_KM() {
-        return distanciaTotal / 1000;
-    }
+    public double distancia_total_KM() {return distanciaTotal / 1000;}
 
     public String tiempo_total() {
         long millse = fechaHoraFin.getTime() - fechaHoraComienzo.getTime();
